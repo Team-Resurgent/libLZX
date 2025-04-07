@@ -5,7 +5,6 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <memory.h>
-#include <malloc.h>
 
 // user incl
 #include "lzx.h"

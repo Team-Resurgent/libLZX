@@ -1,9 +1,9 @@
 // lzx_decoder.c: lzx decompression algorithm
 
 // std incl
+#include <stdlib.h>
 #include <stdint.h>
 #include <memory.h>
-#include <malloc.h>
 
 // user incl
 #include "lzx.h"
