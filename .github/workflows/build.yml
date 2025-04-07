@@ -1,0 +1,46 @@
+name: CI
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+jobs:
+  native_builds:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            build_target: win-x64
+            build_path: \build\
+            artifact_path: \build\Release\libLZX.dll
+          - os: ubuntu-latest
+            build_target: linux-x64
+            build_path: /build/
+            artifact_path: /build/libLZX.so
+          - os: macos-latest
+            build_target: osx
+            build_path: /build/
+            artifact_path: /build/libLZX.dylib
+    name: ${{ matrix.build_target }} Native Build
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Configure
+        run: cmake -B '${{github.workspace}}${{ matrix.build_path }}'
+    
+      - name: Build
+        run: cmake --build '${{github.workspace}}${{ matrix.build_path }}' --config Release
+        
+      - name: List Working Directory Contents
+        uses: cinderblock/github-action-debug-list-files@v1
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v0.1.13
+        with:
+          tag_name: latest
+          draft: false
+          files: '${{github.workspace}}${{ matrix.artifact_path }}'
+        
+
