@@ -109,9 +109,3 @@ Cleanup:
 
     return result;
 }
-
-int FreeBuffer(uint8_t* buffer)
-{
-    free(buffer);
-    return 0;
-}
