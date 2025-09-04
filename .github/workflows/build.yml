@@ -19,7 +19,7 @@ jobs:
             build_path: /build/
             artifact_path: /build/libLZX.so
           - os: macos-latest
-            build_target: osx-x64
+            build_target: osx
             build_path: /build/
             artifact_path: /build/libLZX.dylib
     name: ${{ matrix.build_target }} Native Build
@@ -27,12 +27,21 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Configure
-        run: cmake -B '${{github.workspace}}${{ matrix.build_path }}'
-    
-      - name: Build
+      - name: Configure Windows
+        if: matrix.build_target == 'win-x64'
+        run: cmake -S . -B '${{github.workspace}}${{ matrix.build_path }}' -G "Visual Studio 17 2022" -A x64
+
+      - name: Configure Linux
+        run: cmake -B '${{github.workspace}}${{ matrix.build_path }}' -DCMAKE_C_FLAGS="-m64"  -DCMAKE_CXX_FLAGS="-m64"
+        if: matrix.build_target == 'linux-x64'
+
+      - name: Configure OSX
+        run: cmake -B '${{github.workspace}}${{ matrix.build_path }}' -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64"
+        if: matrix.build_target == 'osx'
+
+      - name: Build 
         run: cmake --build '${{github.workspace}}${{ matrix.build_path }}' --config Release
-        
+
       - name: List Working Directory Contents
         uses: cinderblock/github-action-debug-list-files@v1
 
