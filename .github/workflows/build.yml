@@ -19,7 +19,7 @@ jobs:
             build_path: /build/
             artifact_path: /build/libLZX.so
           - os: macos-latest
-            build_target: osx
+            build_target: osx-x64
             build_path: /build/
             artifact_path: /build/libLZX.dylib
     name: ${{ matrix.build_target }} Native Build
