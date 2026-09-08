@@ -1933,8 +1933,8 @@ static long encode_data(ENCODER_CONTEXT* context, long input_size) {
 
     return 0;
 }
-static bool encode_init(ENCODER_CONTEXT* context, uint8_t* dest) {
-    context->window_size = LZX_WINDOW_SIZE;
+static bool encode_init(ENCODER_CONTEXT* context, uint8_t* dest, uint32_t window_size) {
+    context->window_size = window_size;
     context->encoder_second_partition_size = SECONDARY_PARTITION_SIZE;
     context->output_buffer = dest;
     context->output_buffer_size = 0;
@@ -1955,17 +1955,29 @@ void lzx_flush_compression(ENCODER_CONTEXT* context) {
     encode_flush(context);
 }
 
-ENCODER_CONTEXT* lzx_create_compression(uint8_t* dest) {    
-    ENCODER_CONTEXT* context = (ENCODER_CONTEXT*)malloc(sizeof(ENCODER_CONTEXT));
+ENCODER_CONTEXT* lzx_create_compression_window(uint8_t* dest, uint32_t window_size) {
+    ENCODER_CONTEXT* context;
+
+    /* the window must be a power of two within the range LZX permits */
+    if (window_size < (1u << 15) || window_size > (1u << 21) ||
+        (window_size & (window_size - 1)) != 0) {
+        return NULL;
+    }
+
+    context = (ENCODER_CONTEXT*)malloc(sizeof(ENCODER_CONTEXT));
     if (context == NULL)
         return NULL;
 
-    if (encode_init(context, dest) == false) {
+    if (encode_init(context, dest, window_size) == false) {
         free(context);
         return NULL;
     }
 
     return context;
+}
+
+ENCODER_CONTEXT* lzx_create_compression(uint8_t* dest) {
+    return lzx_create_compression_window(dest, LZX_WINDOW_SIZE);
 }
 void lzx_destroy_compression(ENCODER_CONTEXT* context) {
     if (context != NULL) {

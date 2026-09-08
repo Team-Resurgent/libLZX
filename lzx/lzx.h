@@ -206,6 +206,12 @@ int lzx_calc_decompress_size(const uint8_t* src, const uint32_t src_size, uint32
 /* Create lzx encoder */
 ENCODER_CONTEXT* lzx_create_compression(uint8_t* dest);
 
+/* Create lzx encoder with an explicit window size.
+   Consumers of the compressed stream must decode with the same window; Xbox
+   360 XEX basefiles use 32KiB, whereas LZX_WINDOW_SIZE is 128KiB.
+   window_size must be a power of two from 2^15 to 2^21. */
+ENCODER_CONTEXT* lzx_create_compression_window(uint8_t* dest, uint32_t window_size);
+
 /* Destroy lzx encoder */
 void lzx_destroy_compression(ENCODER_CONTEXT* context);
 
