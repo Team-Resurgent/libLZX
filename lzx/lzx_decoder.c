@@ -80,8 +80,9 @@
 			mask >>= 1; \
 		} while (j < 0); \
 	} \
-    if (dec_input_curpos >= dec_end_input_pos) \
+    if (dec_input_curpos >= dec_end_input_pos) { \
         return -1; \
+    } \
 	dec_bitbuf <<= (context->main_tree_len[j]); \
 	dec_bitcount -= (context->main_tree_len[j]); \
 	if (dec_bitcount <= 0) { \
@@ -140,7 +141,7 @@ static void init_bitbuf(LZX_DECODER_CONTEXT* context) {
 }
 static void fill_bitbuf(LZX_DECODER_CONTEXT* context, int n) {
     context->bitbuf <<= n;
-    context->bitcount -= (char)n;
+    context->bitcount -= (signed char)n;
 
     if (context->bitcount <= 0) {
         if (context->input_curpos >= context->end_input_pos) {
@@ -516,8 +517,8 @@ static long decode_aligned_block_special(LZX_DECODER_CONTEXT* context, long pos,
     const uint8_t* dec_input_curpos;
     const uint8_t* dec_end_input_pos;
     uint8_t* dec_mem_window;
-    char dec_bitcount;
-    char m;
+    signed char dec_bitcount;
+    signed char m;
 
     dec_bitcount = context->bitcount;
     dec_bitbuf = context->bitbuf;
@@ -531,7 +532,8 @@ static long decode_aligned_block_special(LZX_DECODER_CONTEXT* context, long pos,
 
         if ((c -= 256) < 0) {
             dec_mem_window[pos] = (uint8_t)c;
-            dec_mem_window[context->window_size + pos] = (uint8_t)c;
+            if (pos < 257)
+                dec_mem_window[context->window_size + pos] = (uint8_t)c;
             pos++;
         }
         else {
@@ -539,7 +541,7 @@ static long decode_aligned_block_special(LZX_DECODER_CONTEXT* context, long pos,
                 DECODE_LEN_TREE_NOEOFCHECK(match_length);
             }
 
-            m = (char)(c >> 3);
+            m = (signed char)(c >> 3);
 
             if (m > 2) {
                 if (lzx_extra_bits[m] >= 3) {
@@ -608,8 +610,8 @@ static long decode_aligned_offset_block_fast(LZX_DECODER_CONTEXT* context, long 
     const uint8_t* dec_end_input_pos;
     uint8_t* dec_mem_window;
     uint32_t match_ptr;
-    char dec_bitcount;
-    char m;
+    signed char dec_bitcount;
+    signed char m;
 
     dec_bitcount = context->bitcount;
     dec_bitbuf = context->bitbuf;
@@ -629,7 +631,7 @@ static long decode_aligned_offset_block_fast(LZX_DECODER_CONTEXT* context, long 
                 DECODE_LEN_TREE_NOEOFCHECK(match_length);
             }
 
-            m = (char)(c >> 3);
+            m = (signed char)(c >> 3);
 
             if (m > 2) {
 
@@ -714,8 +716,8 @@ static long decode_verbatim_block_special(LZX_DECODER_CONTEXT* context, long pos
     const uint8_t* dec_input_curpos;
     const uint8_t* dec_end_input_pos;
     uint8_t* dec_mem_window;
-    char dec_bitcount;
-    char m;
+    signed char dec_bitcount;
+    signed char m;
 
     dec_bitcount = context->bitcount;
     dec_bitbuf = context->bitbuf;
@@ -730,7 +732,8 @@ static long decode_verbatim_block_special(LZX_DECODER_CONTEXT* context, long pos
 
         if ((c -= 256) < 0) {
             context->mem_window[pos] = (uint8_t)c;
-            context->mem_window[context->window_size + pos] = (uint8_t)c;
+            if (pos < 257)
+                context->mem_window[context->window_size + pos] = (uint8_t)c;
             pos++;
         }
         else {
@@ -738,7 +741,7 @@ static long decode_verbatim_block_special(LZX_DECODER_CONTEXT* context, long pos
                 DECODE_LEN_TREE_NOEOFCHECK(match_length);
             }
 
-            m = (char)(c >> 3);
+            m = (signed char)(c >> 3);
 
             if (m > 2) {
                 if (m > 3) {
@@ -792,8 +795,8 @@ static long decode_verbatim_block_fast(LZX_DECODER_CONTEXT* context, long pos, i
     const uint8_t* dec_input_curpos;
     const uint8_t* dec_end_input_pos;
     uint8_t* dec_mem_window;
-    char dec_bitcount;
-    char m;
+    signed char dec_bitcount;
+    signed char m;
 
     dec_bitcount = context->bitcount;
     dec_bitbuf = context->bitbuf;
@@ -815,7 +818,7 @@ static long decode_verbatim_block_fast(LZX_DECODER_CONTEXT* context, long pos, i
                 DECODE_LEN_TREE_NOEOFCHECK(match_length);
             }
 
-            m = (char)(c >> 3); // get match position slot
+            m = (signed char)(c >> 3); // get match position slot
 
             // read any extra bits for the match position
             if (m > 2) {

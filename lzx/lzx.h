@@ -83,7 +83,7 @@ typedef struct {
     long position_at_start;
     uint8_t main_tree_prev_len[LZX_MAX_MAIN_TREE_ELEMENTS];
     uint8_t secondary_len_tree_prev_len[LZX_NUM_SECONDARY_LEN];
-    char bitcount;
+    signed char bitcount;
     bool first_time_this_group;
     bool error_condition;
     uint32_t bitbuf;
@@ -111,8 +111,8 @@ typedef struct {
     uint32_t* left;
     uint32_t* right;
     uint32_t bitbuf;
-    char bitcount;
-    char depth;
+    signed char bitcount;
+    signed char depth;
     bool output_overflow;
     uint32_t literals;
     uint32_t distances;

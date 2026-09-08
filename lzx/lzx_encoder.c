@@ -254,7 +254,7 @@ static void translate_e8(ENCODER_CONTEXT* context, uint8_t* mem, long bytes) {
 }
 static void output_bits(ENCODER_CONTEXT* context, int n, uint32_t x) {
     context->bitbuf |= (x << (context->bitcount - n));
-    context->bitcount -= (char)n;
+    context->bitcount -= (signed char)n;
 
     while (context->bitcount <= 16) {
         if (context->output_buffer_curpos >= context->output_buffer_end) {
@@ -677,7 +677,7 @@ static void down_heap(ENCODER_CONTEXT* context, short i) {
 
     context->tree_heap[i] = k;
 }
-static void make_code(ENCODER_CONTEXT* context, int n, char len[], uint16_t code[]) {
+static void make_code(ENCODER_CONTEXT* context, int n, signed char len[], uint16_t code[]) {
     int i;
     uint16_t start[18] = { 0 };
     for (i = 1; i <= 16; i++)
@@ -754,7 +754,7 @@ RedoTree:
     make_tree2(context, avail, freqparm, codeparm);
 
     if (make_codes)
-        make_code(context, nparm, (char*)lenparm, codeparm);
+        make_code(context, nparm, (signed char*)lenparm, codeparm);
 }
 static void create_trees(ENCODER_CONTEXT* context, bool generate_codes) {
     make_tree(context, NUM_CHARS + (context->num_position_slots * (LZX_NUM_PRIMARY_LEN + 1)), context->main_tree_freq, context->main_tree_len, context->main_tree_code, generate_codes);
@@ -897,9 +897,9 @@ static void write_rep_tree(ENCODER_CONTEXT* context, uint8_t* pLen, uint8_t* pLa
     int	same;
     uint16_t small_freq[2 * 24] = {0};
     uint16_t mini_code[24] = {0};
-    char mini_len[24] = {0};
+    signed char mini_len[24] = {0};
 
-    char k;
+    signed char k;
     uint8_t temp_store;
 
     temp_store = pLen[Num];
@@ -1095,7 +1095,11 @@ static void encode_uncompressed_block(ENCODER_CONTEXT* context, uint32_t bufpos,
     output_bits(context, context->bitcount - 16, 0);
     for (int i = 0; i < NUM_REPEATED_OFFSETS; i++) {
         val = context->repeated_offset_at_literal_zero[i];
-        for (int j = 0; j < sizeof(long); j++) {
+        /* the repeated offsets are 32 bit in the bitstream, and the decoder
+           reads them back four bytes at a time; sizeof(long) is 8 on every
+           64 bit platform except Windows, which wrote 24 bytes here instead
+           of 12 and desynchronised the stream */
+        for (int j = 0; j < 4; j++) {
             *context->output_buffer_curpos++ = (uint8_t)val;
             val >>= 8;
         }
@@ -1923,7 +1927,13 @@ static void encode_start(ENCODER_CONTEXT* context) {
 static long encode_data(ENCODER_CONTEXT* context, long input_size) {
     context->input_ptr = context->input_buffer;
     context->input_left = input_size;
-    context->file_size_for_translation = DEFAULT_FILE_XLAT_SIZE;
+    /* The x86 E8 CALL translation is only meaningful for x86 executables and
+       relies on the encoder and decoder agreeing on a file size that this code
+       does not compute the same way on both sides. XEX basefiles are PowerPC,
+       so an 0xE8 byte is ordinary data and translating it corrupts a handful
+       of bytes per block. Leave it off; the stream records that choice in its
+       first bit and the decoder honours it. */
+    context->file_size_for_translation = 0;
 
     encode_start(context);
 
