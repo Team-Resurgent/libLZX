@@ -183,6 +183,18 @@ extern "C" {
 /* Create lzx decoder */
 LZX_DECODER_CONTEXT* lzx_create_decompression();
 
+/* Create lzx decoder with an explicit window size. Must match the window the
+   stream was compressed with. Xbox 360 XEX basefiles use 32KiB, whereas
+   LZX_WINDOW_SIZE is 128KiB.
+   window_size must be a power of two from 2^15 to 2^21. */
+LZX_DECODER_CONTEXT* lzx_create_decompression_window(uint32_t window_size);
+
+/* Seed the window before decoding, for streams that continue from earlier
+   output rather than starting empty. The data is placed at the end of the
+   window and the remainder zeroed, so it reads as the output immediately
+   preceding position zero. Used by Xbox 360 XEX delta patches. */
+int lzx_set_window_data(LZX_DECODER_CONTEXT* context, const uint8_t* data, uint32_t size);
+
 /* Destroy lzx decoder */
 void lzx_destroy_decompression(LZX_DECODER_CONTEXT* context);
 

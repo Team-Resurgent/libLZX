@@ -1038,10 +1038,10 @@ static long decode_data(LZX_DECODER_CONTEXT* context, int bytes_to_decode) {
 
     return total_decoded;
 }
-static bool decode_init(LZX_DECODER_CONTEXT* context) {
+static bool decode_init(LZX_DECODER_CONTEXT* context, uint32_t window_size) {
     uint32_t pos_start = 4;
 
-    context->window_size = LZX_WINDOW_SIZE;
+    context->window_size = window_size;
     context->window_mask = context->window_size - 1;
     context->num_position_slots = 4;
 
@@ -1122,18 +1122,48 @@ static int lzx_check_buffer_resize(uint8_t** buffer, uint8_t** buffer_ptr, uint3
     return 0;
 }
 
-LZX_DECODER_CONTEXT* lzx_create_decompression() {
-    LZX_DECODER_CONTEXT* context = (LZX_DECODER_CONTEXT*)malloc(sizeof(LZX_DECODER_CONTEXT));
+LZX_DECODER_CONTEXT* lzx_create_decompression_window(uint32_t window_size) {
+    LZX_DECODER_CONTEXT* context;
+
+    /* the window must be a power of two within the range LZX permits */
+    if (window_size < (1u << 15) || window_size > (1u << 21) ||
+        (window_size & (window_size - 1)) != 0) {
+        return NULL;
+    }
+
+    context = (LZX_DECODER_CONTEXT*)malloc(sizeof(LZX_DECODER_CONTEXT));
     if (context == NULL) {
         return NULL;
     }
 
-    if (decode_init(context) == false) {
+    if (decode_init(context, window_size) == false) {
         free(context);
         context = NULL;
     }
 
     return context;
+}
+
+LZX_DECODER_CONTEXT* lzx_create_decompression() {
+    return lzx_create_decompression_window(LZX_WINDOW_SIZE);
+}
+
+int lzx_set_window_data(LZX_DECODER_CONTEXT* context, const uint8_t* data, uint32_t size) {
+    if (context == NULL || context->mem_window == NULL) {
+        return LZX_ERROR_INVALID_DATA;
+    }
+    if (size > context->window_size) {
+        return LZX_ERROR_INVALID_DATA;
+    }
+
+    /* The data sits at the end of the window, so that it reads as the output
+     * immediately preceding position zero, and anything before it is zero.
+     * Matches reach back into the whole window, not just the seeded part. */
+    memcpy(context->mem_window + context->window_size - size, data, size);
+    if (size < context->window_size) {
+        memset(context->mem_window, 0, context->window_size - size);
+    }
+    return 0;
 }
 void lzx_destroy_decompression(LZX_DECODER_CONTEXT* context) {
     if (context != NULL) {
